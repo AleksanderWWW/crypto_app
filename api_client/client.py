@@ -31,9 +31,5 @@ class Client:
         )
         r = requests.get(url, headers=self.headers)
 
-        if r.ok:
-            container["result"] = r.json()
-            return
-
-        raise Exception(f"GET request failed with code: {r.status_code}")
+        return r.json()
 

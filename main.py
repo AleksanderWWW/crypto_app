@@ -8,8 +8,8 @@ def main():
     date = datetime.date.today() - datetime.timedelta(days=1)
 
     gui = Gui()
-    gui.get_daily_open_close(ticker, date)
-    print(gui.current_result)
+    #gui.get_daily_open_close(ticker, date)
+    gui.run()
 
 
 if __name__ == '__main__':
