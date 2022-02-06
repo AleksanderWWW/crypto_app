@@ -1,7 +1,8 @@
-"""
-Created by a.wojnarowicz
+"""Utility functions for the application GUI"""
 
-on 2/6/2022 8:53 PM
 
-please submit questions to a.wojnarowicz@oerlikon.com
-"""
+def transform_ticker(ticker: str) -> str:
+    ticker_no_x = ticker.split(":")[1]
+    curr = ticker_no_x[-3:]
+    base = ticker_no_x[:-3]
+    return base + "-" + curr

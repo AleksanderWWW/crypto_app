@@ -3,6 +3,9 @@
 import datetime
 
 import requests
+import requests.exceptions
+
+import pandas_datareader.data as web
 
 
 class Client:
@@ -17,25 +20,20 @@ class Client:
 
     def _load_tickers(self) -> list:
         url = self.route_config["BASE_URL"] + self.route_config["TICKERS"]
-        r = requests.get(url, headers=self.headers)
-        results = r.json()["results"]
+        try:
+            r = requests.get(url, headers=self.headers)
+            results = r.json()["results"]
+        except requests.exceptions.ConnectionError:
+            return []
+
         return results
 
-    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted: bool = True) -> dict:
+    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted: bool = True):
+        result = web.DataReader(name=ticker, data_source='yahoo',
+                                start=date,
+                                end=date.strftime("%Y-%m-%d"))
         if adjusted:
-            adjusted = "true"
+            close = result.iloc[0, -1]
         else:
-            adjusted = "false"
-
-        date = date.strftime("%Y-%m-%d")
-
-        url = self.route_config["BASE_URL"] + \
-            self.route_config["DAILY"].format(
-            stocksTicker=ticker,
-            date=date,
-            adjusted=adjusted
-        )
-        r = requests.get(url, headers=self.headers)
-
-        return r.json()
-
+            close = result.iloc[0, -3]
+        return close

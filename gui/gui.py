@@ -1,12 +1,16 @@
 import tkinter
 import datetime
 import abc
+import threading
 
 import tkcalendar
 import tkinter.font
+import pandas_datareader._utils
+import requests.exceptions
 
 from PIL import ImageTk, Image
 from api_client.client import Client
+from .utils import *
 
 
 class Screen:
@@ -21,9 +25,11 @@ class Screen:
 
     @abc.abstractmethod
     def _build_window(self):
+        """Screen layout goes here"""
         ...
 
     def _transition(self, new_screen):
+        """Switch to a given screen. Results in destruction of the current screen"""
         self.root.destroy()
         new_screen_obj = new_screen(self.original_config)
         new_screen_obj.run()
@@ -67,16 +73,28 @@ class Gui(Screen):
 
     def __init__(self, config) -> None:
         self.api_client = Client(config)  # will be used to execute user's queries
-
-        self.ticker_list = [info["ticker"] for info in self.api_client.tickers]
-        self.asset_names = [info["base_currency_name"] for info in self.api_client.tickers]
+        # TODO: ticker list and/or asset names
+        self.ticker_list = [transform_ticker(tic["ticker"])
+                            for tic in self.api_client.tickers]
 
         super().__init__(config, screen_name="main")
         self.ticker_var = tkinter.StringVar(self.root)
-        self.ticker_var.set(self.ticker_list[0])  # default option
+        if self.ticker_list:
+            self.ticker_var.set(self.ticker_list[0])  # default option
+        else:
+            self.ticker_var.set("Failed to load tickers")
+            tkinter.Label(self.root, text="No internet connection!",
+                          font=("MS Serif", 15, "bold")).pack()
+
         self._build_window()
 
+        self.daily_res = {"result": None}
+
     def _build_window(self):
+        # background_image = ImageTk.PhotoImage(Image.open("background.png"))
+        # background_label = tkinter.Label(self.root, image=background_image)
+        # background_label.image = background_image
+        # background_label.place(x=0, y=0, relwidth=1, relheight=1)
         ticker_choice = tkinter.ttk.Combobox(self.root, textvariable=self.ticker_var
                                              ,
                                              values=self.ticker_list)
@@ -90,36 +108,45 @@ class Gui(Screen):
         date_entry.pack()
 
         button = tkinter.Button(self.root, text="Search",
-                                command=lambda: self.get_daily_open_close())
+                                command=lambda: self.get_daily_open_close(),
+                                font=("MS Serif", 15, "bold"))
         button.pack()
 
-        result_label = tkinter.Label(self.root, name="close_price")
+        result_label = tkinter.Label(self.root, name="close_price", font=("MS Serif", 15, "bold"))
         result_label.pack()
 
+        refresh_button = tkinter.Button(self.root, text="Refresh",
+                                         command=lambda: self._transition(Gui),
+                                         font=("MS Serif", 15, "bold"))
+        refresh_button.pack()
+
         back_button = tkinter.Button(self.root, text="Back",
-                                     command=lambda: self._transition(StartScreen))
-        back_button.pack()
+                                     command=lambda: self._transition(StartScreen),
+                                     font=("MS Serif", 15, "bold"))
+        back_button.pack(side="bottom")
+
+    def _get_quote(self, ticker, date):
+        try:
+            close = self.api_client.get_daily_open_close(ticker, date)
+            text = f"Closing price for {ticker.upper()}: {close}"
+        except KeyError:
+            text = f"No data for {date.strftime('%Y-%m-%d')}"
+        except pandas_datareader._utils.RemoteDataError as e:
+            text = str(e)
+        except requests.exceptions.ConnectionError:
+            text = "Query failed. Please check your network connection and try again."
+
+        self.root.children["close_price"].config(text=text)
 
     def get_daily_open_close(self,  adjusted: bool = True):
         date = datetime.datetime.strptime(self.root.children["!dateentry"].get(), "%m/%d/%y")
-        ticker = self.ticker_var.get()
-        asset = [data for data in self.api_client.tickers
-                 if data["ticker"] == ticker][0]
+        ticker = self.ticker_var.get().lower()
+        self.root.children["close_price"].config(text="waiting for the query to complete...")
+        # TODO: add loading gif
+        self.root.update()
 
-        result = self.api_client.get_daily_open_close(ticker, date, adjusted)
-
-        try:
-            close = result["close"]
-            text = f"Name: {asset['base_currency_name']}\n" \
-                   f"In relation to: {asset['currency_name']}\n" \
-                   f" Closing price: {close} {asset['currency_symbol']}"
-        except KeyError:
-            if result["status"] == "ERROR":
-                text = result['error']
-            else:
-                text = result["message"]
-
-        self.root.children["close_price"].config(text=text)
+        thread = threading.Thread(target=self._get_quote, args=(ticker, date, adjusted))
+        thread.start()
 
     def run(self):
         self.root.mainloop()
