@@ -1,55 +1,79 @@
 import tkinter
 import datetime
+import abc
 
 import tkcalendar
+import tkinter.font
 
+from PIL import ImageTk, Image
 from api_client.client import Client
 
 
-class StartScreen:
+class Screen:
+    def __init__(self, config, screen_name):
 
-    def __init__(self, config) -> None:
         self.original_config = config
         self.config = config["gui"]
-        self.root = tkinter.Tk(screenName="start_screen")
+        self.root = tkinter.Tk(screenName=screen_name)
         self.root.title(self.config["TITLE"])
+        self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
-        self._build_window()
 
+    @abc.abstractmethod
     def _build_window(self):
-        welcome_label = tkinter.Label(text="Welcome to Crypto App!")
-        welcome_label.pack()
-        button_text = "Start"
-        start_button = tkinter.Button(self.root, text=button_text,
-                                      name="start_button",
-                                      command=self._transition,
-                                      width=50)
-        start_button.pack(side="bottom")
+        ...
 
-    def _transition(self):
+    def _transition(self, new_screen):
         self.root.destroy()
-        new_screen = Gui(self.original_config)
-        new_screen.run()
+        new_screen_obj = new_screen(self.original_config)
+        new_screen_obj.run()
 
     def run(self):
         self.root.mainloop()
 
 
-class Gui:
+class StartScreen(Screen):
+
+    def __init__(self, config) -> None:
+        super().__init__(config, screen_name="start_screen")
+        self._build_window()
+
+    def _build_window(self):
+        frame = tkinter.Frame(self.root, padx=20, pady=20)
+        frame.pack(fill="both", expand=True)
+        welcome_label = tkinter.Label(frame, text="Welcome to Crypto App!",
+                                      font=("MS Serif", 20, "bold"))
+        welcome_label.pack()
+
+        im = Image.open("title_page.jpg")
+
+        im = im.resize((1000, 600))
+        image = ImageTk.PhotoImage(im)
+        img_label = tkinter.Label(frame, image=image)
+        img_label.image = image
+        img_label.pack()
+
+        button_text = "Start"
+        start_button = tkinter.Button(frame, text=button_text,
+                                      name="start_button",
+                                      command=lambda: self._transition(Gui),
+                                      width=50,
+                                      pady=20,
+                                      font=("MS Serif", 15, "bold"))
+        start_button.pack(side='bottom')
+
+
+class Gui(Screen):
 
     def __init__(self, config) -> None:
         self.api_client = Client(config)  # will be used to execute user's queries
-        self.config = config["gui"]
 
         self.ticker_list = [info["ticker"] for info in self.api_client.tickers]
         self.asset_names = [info["base_currency_name"] for info in self.api_client.tickers]
 
-        self.root = tkinter.Tk(screenName="main")
-        self.root.title(self.config["TITLE"])
-        self.root.geometry(self.config["GEOM"])
+        super().__init__(config, screen_name="main")
         self.ticker_var = tkinter.StringVar(self.root)
         self.ticker_var.set(self.ticker_list[0])  # default option
-
         self._build_window()
 
     def _build_window(self):
@@ -71,6 +95,10 @@ class Gui:
 
         result_label = tkinter.Label(self.root, name="close_price")
         result_label.pack()
+
+        back_button = tkinter.Button(self.root, text="Back",
+                                     command=lambda: self._transition(StartScreen))
+        back_button.pack()
 
     def get_daily_open_close(self,  adjusted: bool = True):
         date = datetime.datetime.strptime(self.root.children["!dateentry"].get(), "%m/%d/%y")
