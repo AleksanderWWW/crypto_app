@@ -49,6 +49,3 @@ def transform_ticker(ticker: str) -> str:
     curr = ticker_no_x[-3:]
     base = ticker_no_x[:-3]
     return base + "-" + curr
-
-
-

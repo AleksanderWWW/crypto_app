@@ -21,6 +21,7 @@ class Screen:
         self.root.title(self.config["TITLE"])
         self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
+        self.root.iconbitmap("window_icon.ico")
 
     @abc.abstractmethod
     def _build_window(self):
@@ -64,7 +65,8 @@ class StartScreen(Screen):
                                       command=lambda: self._transition(Gui),
                                       width=50,
                                       pady=20,
-                                      font=("MS Serif", 15, "bold"))
+                                      font=("MS Serif", 15, "bold"),
+                                      bg='#d4af37')
         start_button.pack(side='bottom')
 
 
@@ -78,6 +80,8 @@ class Gui(Screen):
 
         super().__init__(config, screen_name="main")
         self.ticker_var = tkinter.StringVar(self.root)
+        self.adjusted_var = tkinter.StringVar(self.root)
+        self.adjusted_var.set("adjusted")  # default option
         if self.ticker_list:
             self.ticker_var.set(self.ticker_list[0])  # default option
         else:
@@ -91,41 +95,51 @@ class Gui(Screen):
         self.loading_lbl = None
 
     def _build_window(self):
-        # background_image = ImageTk.PhotoImage(Image.open("background.png"))
-        # background_label = tkinter.Label(self.root, image=background_image)
-        # background_label.image = background_image
-        # background_label.place(x=0, y=0, relwidth=1, relheight=1)
-        ticker_choice = tkinter.ttk.Combobox(self.root, textvariable=self.ticker_var
-                                             ,
-                                             values=self.ticker_list)
+        frame = tkinter.Frame(self.root, padx=40, pady=40)
+        frame.pack(expand=True, fill="both")
+
+        background_image = ImageTk.PhotoImage(Image.open("background.jpg"))
+        background_label = tkinter.Label(frame, image=background_image)
+        background_label.image = background_image
+        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        ticker_choice = tkinter.ttk.Combobox(frame, textvariable=self.ticker_var,
+                                             values=self.ticker_list, font=("MS Serif", 15, "bold"))
         ticker_choice.pack()
 
-        date_entry = tkcalendar.DateEntry(self.root,
+        date_entry = tkcalendar.DateEntry(frame,
                                           width=30,
                                           bg="darkblue",
                                           fg="white",
-                                          year=datetime.date.today().year)
+                                          year=datetime.date.today().year,
+                                          font=("MS Serif", 15, "bold"))
         date_entry.pack()
 
-        button = tkinter.Button(self.root, text="Search",
-                                command=lambda: self.get_daily_open_close(),
-                                font=("MS Serif", 15, "bold"))
-        button.pack()
+        adjusted_choice = tkinter.ttk.Combobox(frame, textvariable=self.adjusted_var,
+                                               values=["adjusted", "not adjusted"],
+                                               font=("MS Serif", 15, "bold"))
 
-        refresh_button = tkinter.Button(self.root, text="Refresh",
+        search_button = tkinter.Button(frame, text="Search",
+                                       command=lambda: self.get_daily_open_close(),
+                                       font=("MS Serif", 15, "bold"),
+                                       )
+        adjusted_choice.pack()
+
+        search_button.pack()
+
+        refresh_button = tkinter.Button(frame, text="Refresh",
                                         command=lambda: self._transition(Gui),
                                         font=("MS Serif", 15, "bold"))
         refresh_button.pack()
 
-        back_button = tkinter.Button(self.root, text="Back",
+        back_button = tkinter.Button(frame, text="Back",
                                      command=lambda: self._transition(StartScreen),
                                      font=("MS Serif", 15, "bold"))
         back_button.pack(side="bottom")
 
-    def _get_quote(self, ticker, date, adjusted=True):
-        import time; time.sleep(10)
+    def _get_quote(self, ticker, date, out_label):
         try:
-            close = self.api_client.get_daily_open_close(ticker, date, adjusted)
+            close = self.api_client.get_daily_open_close(ticker, date, str(self.adjusted_var))
             text = f"Closing price for {ticker.upper()}: {close}"
         except KeyError:
             text = f"No data for {date.strftime('%Y-%m-%d')}"
@@ -133,21 +147,24 @@ class Gui(Screen):
             text = str(e)
         except requests.exceptions.ConnectionError:
             text = "Query failed. Please check your network connection and try again."
-        self.loading_lbl.destroy()
-        self.root.children["close_price"].config(text=text)
 
-    def get_daily_open_close(self, adjusted: bool = True):
-        date = datetime.datetime.strptime(self.root.children["!dateentry"].get(), "%m/%d/%y")
+        self.loading_lbl.unload()
+        self.loading_lbl.destroy()
+        out_label.config(text=text)
+
+    def get_daily_open_close(self):
+        frame = self.root.children["!frame"]
+        date = datetime.datetime.strptime(frame.children["!dateentry"].get(), "%m/%d/%y")
         ticker = self.ticker_var.get().lower()
-        self.loading_lbl = utils.ImageLabel(self.root)
+        self.loading_lbl = utils.ImageLabel(frame)
         self.loading_lbl.pack()
         self.loading_lbl.load('loading.gif')
-        result_label = tkinter.Label(self.root, name="close_price", font=("MS Serif", 15, "bold"),
+        result_label = tkinter.Label(frame, name="close_price", font=("MS Serif", 15, "bold"),
                                      text="waiting for the query to complete...")
         result_label.pack()
         self.root.update()
 
-        thread = threading.Thread(target=self._get_quote, args=(ticker, date, adjusted))
+        thread = threading.Thread(target=self._get_quote, args=(ticker, date, result_label))
         thread.start()
 
     def run(self):

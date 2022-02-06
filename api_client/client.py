@@ -28,11 +28,11 @@ class Client:
 
         return results
 
-    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted: bool = True):
+    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted):
         result = web.DataReader(name=ticker, data_source='yahoo',
                                 start=date,
                                 end=date.strftime("%Y-%m-%d"))
-        if adjusted:
+        if adjusted == "adjusted":
             close = result.iloc[0, -1]
         else:
             close = result.iloc[0, -3]
