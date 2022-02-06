@@ -37,7 +37,7 @@ class Gui:
         ticker = self.root.children["!entry"].get()
         date = datetime.datetime.strptime(self.root.children["!dateentry"].get(), "%m/%d/%y")
 
-        result = self.api_client.get_daily_open_close(ticker, date)
+        result = self.api_client.get_daily_open_close(ticker, date, adjusted)
 
         try:
             close = result["close"]
@@ -46,7 +46,6 @@ class Gui:
             text = f"Data for {date.strftime('%d/%m/%Y')} unavailable"
 
         self.root.children["!label"].config(text=text)
-
 
     def run(self):
         self.root.mainloop()

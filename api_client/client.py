@@ -15,7 +15,7 @@ class Client:
 
         self.headers = {"Authorization": f"Bearer {self.access_config['API_KEY']}"}
 
-    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted: bool = True, container={}) -> None:
+    def get_daily_open_close(self, ticker: str, date: datetime.date, adjusted: bool = True) -> dict:
         if adjusted:
             adjusted = "true"
         else:
