@@ -10,12 +10,11 @@ import requests.exceptions
 
 from PIL import ImageTk, Image
 from api_client.client import Client
-from .utils import *
+import gui.utils as utils
 
 
 class Screen:
     def __init__(self, config, screen_name):
-
         self.original_config = config
         self.config = config["gui"]
         self.root = tkinter.Tk(screenName=screen_name)
@@ -74,7 +73,7 @@ class Gui(Screen):
     def __init__(self, config) -> None:
         self.api_client = Client(config)  # will be used to execute user's queries
         # TODO: ticker list and/or asset names
-        self.ticker_list = [transform_ticker(tic["ticker"])
+        self.ticker_list = [utils.transform_ticker(tic["ticker"])
                             for tic in self.api_client.tickers]
 
         super().__init__(config, screen_name="main")
@@ -89,6 +88,7 @@ class Gui(Screen):
         self._build_window()
 
         self.daily_res = {"result": None}
+        self.loading_lbl = None
 
     def _build_window(self):
         # background_image = ImageTk.PhotoImage(Image.open("background.png"))
@@ -112,12 +112,9 @@ class Gui(Screen):
                                 font=("MS Serif", 15, "bold"))
         button.pack()
 
-        result_label = tkinter.Label(self.root, name="close_price", font=("MS Serif", 15, "bold"))
-        result_label.pack()
-
         refresh_button = tkinter.Button(self.root, text="Refresh",
-                                         command=lambda: self._transition(Gui),
-                                         font=("MS Serif", 15, "bold"))
+                                        command=lambda: self._transition(Gui),
+                                        font=("MS Serif", 15, "bold"))
         refresh_button.pack()
 
         back_button = tkinter.Button(self.root, text="Back",
@@ -125,9 +122,10 @@ class Gui(Screen):
                                      font=("MS Serif", 15, "bold"))
         back_button.pack(side="bottom")
 
-    def _get_quote(self, ticker, date):
+    def _get_quote(self, ticker, date, adjusted=True):
+        import time; time.sleep(10)
         try:
-            close = self.api_client.get_daily_open_close(ticker, date)
+            close = self.api_client.get_daily_open_close(ticker, date, adjusted)
             text = f"Closing price for {ticker.upper()}: {close}"
         except KeyError:
             text = f"No data for {date.strftime('%Y-%m-%d')}"
@@ -135,14 +133,18 @@ class Gui(Screen):
             text = str(e)
         except requests.exceptions.ConnectionError:
             text = "Query failed. Please check your network connection and try again."
-
+        self.loading_lbl.destroy()
         self.root.children["close_price"].config(text=text)
 
-    def get_daily_open_close(self,  adjusted: bool = True):
+    def get_daily_open_close(self, adjusted: bool = True):
         date = datetime.datetime.strptime(self.root.children["!dateentry"].get(), "%m/%d/%y")
         ticker = self.ticker_var.get().lower()
-        self.root.children["close_price"].config(text="waiting for the query to complete...")
-        # TODO: add loading gif
+        self.loading_lbl = utils.ImageLabel(self.root)
+        self.loading_lbl.pack()
+        self.loading_lbl.load('loading.gif')
+        result_label = tkinter.Label(self.root, name="close_price", font=("MS Serif", 15, "bold"),
+                                     text="waiting for the query to complete...")
+        result_label.pack()
         self.root.update()
 
         thread = threading.Thread(target=self._get_quote, args=(ticker, date, adjusted))
