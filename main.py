@@ -1,14 +1,12 @@
-import datetime
+import configparser
 
 from gui.gui import Gui
 
 
 def main():
-    ticker = "AAPL"
-    date = datetime.date.today() - datetime.timedelta(days=1)
-
-    gui = Gui()
-    #gui.get_daily_open_close(ticker, date)
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    gui = Gui(config)
     gui.run()
 
 
