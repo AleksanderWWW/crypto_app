@@ -6,6 +6,35 @@ import tkcalendar
 from api_client.client import Client
 
 
+class StartScreen:
+
+    def __init__(self, config) -> None:
+        self.original_config = config
+        self.config = config["gui"]
+        self.root = tkinter.Tk(screenName="start_screen")
+        self.root.title(self.config["TITLE"])
+        self.root.geometry(self.config["GEOM"])
+        self._build_window()
+
+    def _build_window(self):
+        welcome_label = tkinter.Label(text="Welcome to Crypto App!")
+        welcome_label.pack()
+        button_text = "Start"
+        start_button = tkinter.Button(self.root, text=button_text,
+                                      name="start_button",
+                                      command=self._transition,
+                                      width=50)
+        start_button.pack(side="bottom")
+
+    def _transition(self):
+        self.root.destroy()
+        new_screen = Gui(self.original_config)
+        new_screen.run()
+
+    def run(self):
+        self.root.mainloop()
+
+
 class Gui:
 
     def __init__(self, config) -> None:
@@ -53,8 +82,8 @@ class Gui:
 
         try:
             close = result["close"]
-            text = f"Base: {asset['base_currency_name']}\n" \
-                   f"Currency: {asset['currency_name']}\n" \
+            text = f"Name: {asset['base_currency_name']}\n" \
+                   f"In relation to: {asset['currency_name']}\n" \
                    f" Closing price: {close} {asset['currency_symbol']}"
         except KeyError:
             if result["status"] == "ERROR":

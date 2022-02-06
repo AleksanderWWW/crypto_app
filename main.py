@@ -1,13 +1,13 @@
 import configparser
 
-from gui.gui import Gui
+from gui.gui import StartScreen
 
 
 def main():
     config = configparser.ConfigParser()
     config.read("config.ini")
-    gui = Gui(config)
-    gui.run()
+    app = StartScreen(config)
+    app.run()
 
 
 if __name__ == '__main__':
