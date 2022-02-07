@@ -45,14 +45,14 @@ class StartScreen(Screen):
         self._build_window()
 
     def _build_window(self):
-        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
+        frame = tkinter.Frame(self.root, pady=20, bg="black")
         frame.pack(fill="both", expand=True)
         welcome_label = tkinter.Label(frame, text="Welcome to Crypto App!",
                                       font=("MS Serif", 20, "bold"))
-        welcome_label.pack()
+        welcome_label.grid(row=0, column=0, columnspan=3)
 
-        im_frame = tkinter.Frame(frame, padx=20, pady=10, bg="black")
-        im_frame.pack()
+        im_frame = tkinter.Frame(frame, padx=5, pady=10, bg="black")
+        im_frame.grid(row=1, column=0, sticky="", columnspan=3)
 
         im = Image.open("title_page.jpg")
 
@@ -62,15 +62,24 @@ class StartScreen(Screen):
         img_label.image = image
         img_label.pack()
 
-        button_text = "Start"
-        start_button = tkinter.Button(frame, text=button_text,
-                                      name="start_button",
+        start_button = tkinter.Button(frame, text="Daily quotes",
+                                      name="daily_close",
                                       command=lambda: self._transition(Gui),
-                                      width=50,
+                                      width=20,
                                       pady=20,
                                       font=("MS Serif", 15, "bold"),
                                       bg='#d4af37')
-        start_button.pack(side='bottom')
+        start_button.grid(row=2, column=0)
+        btn1 = tkinter.Button(frame, text="About", width=20,
+                                      pady=20,
+                                      font=("MS Serif", 15, "bold"),
+                                      bg='#d4af37')
+        btn2 = tkinter.Button(frame, text="Historical data", width=20,
+                                      pady=20,
+                                      font=("MS Serif", 15, "bold"),
+                                      bg='#d4af37')
+        btn1.grid(row=2, column=1)
+        btn2.grid(row=2, column=2)
 
 
 class Gui(Screen):
