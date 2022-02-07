@@ -45,17 +45,20 @@ class StartScreen(Screen):
         self._build_window()
 
     def _build_window(self):
-        frame = tkinter.Frame(self.root, padx=20, pady=20)
+        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
         frame.pack(fill="both", expand=True)
         welcome_label = tkinter.Label(frame, text="Welcome to Crypto App!",
                                       font=("MS Serif", 20, "bold"))
         welcome_label.pack()
 
+        im_frame = tkinter.Frame(frame, padx=20, pady=10, bg="black")
+        im_frame.pack()
+
         im = Image.open("title_page.jpg")
 
         im = im.resize((1000, 600))
         image = ImageTk.PhotoImage(im)
-        img_label = tkinter.Label(frame, image=image)
+        img_label = tkinter.Label(im_frame, image=image)
         img_label.image = image
         img_label.pack()
 
@@ -95,7 +98,8 @@ class Gui(Screen):
         self.loading_lbl = None
 
     def _build_window(self):
-        frame = tkinter.Frame(self.root, padx=40, pady=40)
+        padx = 20
+        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
         frame.pack(expand=True, fill="both")
 
         background_image = ImageTk.PhotoImage(Image.open("background.jpg"))
@@ -105,7 +109,7 @@ class Gui(Screen):
 
         ticker_choice = tkinter.ttk.Combobox(frame, textvariable=self.ticker_var,
                                              values=self.ticker_list, font=("MS Serif", 15, "bold"))
-        ticker_choice.pack()
+        ticker_choice.grid(row=0, column=0, padx=padx, pady=20)
 
         date_entry = tkcalendar.DateEntry(frame,
                                           width=30,
@@ -113,7 +117,7 @@ class Gui(Screen):
                                           fg="white",
                                           year=datetime.date.today().year,
                                           font=("MS Serif", 15, "bold"))
-        date_entry.pack()
+        date_entry.grid(row=0, column=1, padx=padx, pady=20)
 
         adjusted_choice = tkinter.ttk.Combobox(frame, textvariable=self.adjusted_var,
                                                values=["adjusted", "not adjusted"],
@@ -123,30 +127,30 @@ class Gui(Screen):
                                        command=lambda: self.get_daily_open_close(),
                                        font=("MS Serif", 15, "bold"),
                                        )
-        adjusted_choice.pack()
+        adjusted_choice.grid(row=0, column=2, padx=padx, pady=20, columnspan=2)
 
-        search_button.pack()
+        search_button.grid(row=1, column=1, padx=padx, pady=60)
 
         refresh_button = tkinter.Button(frame, text="Refresh",
                                         command=lambda: self._transition(Gui),
                                         font=("MS Serif", 15, "bold"))
-        refresh_button.pack()
+        refresh_button.grid(row=3, column=2, padx=padx, pady=20)
 
         back_button = tkinter.Button(frame, text="Back",
                                      command=lambda: self._transition(StartScreen),
                                      font=("MS Serif", 15, "bold"))
-        back_button.pack(side="bottom")
+        back_button.grid(row=3, column=0, padx=padx, pady=20)
 
     def _get_quote(self, ticker, date, out_label):
         try:
             close = self.api_client.get_daily_open_close(ticker, date, str(self.adjusted_var))
-            text = f"Closing price for {ticker.upper()}: {close}"
+            text = f"Closing price for {ticker.upper()}:\n {close}"
         except KeyError:
             text = f"No data for {date.strftime('%Y-%m-%d')}"
-        except pandas_datareader._utils.RemoteDataError as e:
-            text = str(e)
+        except pandas_datareader._utils.RemoteDataError:
+            text = f"No data fetched for symbol {ticker}\n using YahooDailyReader"
         except requests.exceptions.ConnectionError:
-            text = "Query failed. Please check your network connection and try again."
+            text = "Query failed. \nPlease check your network connection and try again."
 
         self.loading_lbl.unload()
         self.loading_lbl.destroy()
@@ -154,14 +158,15 @@ class Gui(Screen):
 
     def get_daily_open_close(self):
         frame = self.root.children["!frame"]
+        #frame = self.root
         date = datetime.datetime.strptime(frame.children["!dateentry"].get(), "%m/%d/%y")
         ticker = self.ticker_var.get().lower()
         self.loading_lbl = utils.ImageLabel(frame)
-        self.loading_lbl.pack()
+        self.loading_lbl.grid(row=2, column=1, pady=60)
         self.loading_lbl.load('loading.gif')
         result_label = tkinter.Label(frame, name="close_price", font=("MS Serif", 15, "bold"),
                                      text="waiting for the query to complete...")
-        result_label.pack()
+        result_label.grid(row=2, column=1, pady=60)
         self.root.update()
 
         thread = threading.Thread(target=self._get_quote, args=(ticker, date, result_label))

@@ -9,6 +9,7 @@ class ImageLabel(tk.Label):
     """
     A Label that displays images, and plays them if they are gifs
     :im: A PIL Image instance or a string filename
+    Source: https://pythonprogramming.altervista.org/animate-gif-in-tkinter/
     """
 
     def load(self, im):
