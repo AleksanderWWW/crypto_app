@@ -36,6 +36,17 @@ class Screen:
         new_screen_obj = new_screen(self.original_config)
         new_screen_obj.run()
 
+    def _add_footer_buttons(self, parent, **kwargs):
+        back_button = tkinter.Button(parent, text="Back",
+                                     command=lambda: self._transition(StartScreen),
+                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
+        back_button.grid(row=kwargs["row"], column=0, padx=kwargs["padx"], pady=20)
+
+        refresh_button = tkinter.Button(parent, text="Refresh",
+                                        command=lambda: self._transition(self.__class__),
+                                        font=("MS Serif", 15, "bold"), bg='#d4af37')
+        refresh_button.grid(row=kwargs["row"], column=2, padx=kwargs["padx"], pady=20)
+
     def run(self):
         self._build_window()
         self.root.mainloop()
@@ -73,13 +84,13 @@ class StartScreen(Screen):
                                       bg='#d4af37')
         start_button.grid(row=2, column=0)
         btn1 = tkinter.Button(frame, text="About", width=20,
-                                      pady=20,
-                                      font=("MS Serif", 15, "bold"),
-                                      bg='#d4af37')
+                              pady=20,
+                              font=("MS Serif", 15, "bold"),
+                              bg='#d4af37')
         btn2 = tkinter.Button(frame, text="Historical data", width=20,
-                                      pady=20,
-                                      font=("MS Serif", 15, "bold"),
-                                      bg='#d4af37',
+                              pady=20,
+                              font=("MS Serif", 15, "bold"),
+                              bg='#d4af37',
                               command=lambda: self._transition(HistoricalQuotes))
         btn1.grid(row=2, column=1)
         btn2.grid(row=2, column=2)
@@ -134,21 +145,14 @@ class Gui(Screen):
 
         search_button = tkinter.Button(frame, text="Search",
                                        command=lambda: self.get_daily_open_close(),
-                                       font=("MS Serif", 15, "bold"),
+                                       font=("MS Serif", 15, "bold"), bg='#d4af37'
                                        )
         adjusted_choice.grid(row=0, column=2, padx=padx, pady=20, columnspan=2)
 
         search_button.grid(row=1, column=1, padx=padx, pady=60)
 
-        refresh_button = tkinter.Button(frame, text="Refresh",
-                                        command=lambda: self._transition(Gui),
-                                        font=("MS Serif", 15, "bold"))
-        refresh_button.grid(row=3, column=2, padx=padx, pady=20)
 
-        back_button = tkinter.Button(frame, text="Back",
-                                     command=lambda: self._transition(StartScreen),
-                                     font=("MS Serif", 15, "bold"))
-        back_button.grid(row=3, column=0, padx=padx, pady=20)
+        self._add_footer_buttons(frame, padx=20, row=3)
 
     def _get_quote(self, ticker, date, out_label):
         try:
@@ -188,16 +192,16 @@ class HistoricalQuotes(Gui):
 
     def _build_chart(self, frame, ticker, table=None):
         if table is None:
-            error_label = tkinter.Label(frame, text=f"Could not load data for {ticker}")
+            error_label = tkinter.Label(frame, text=f"Could not load data for {ticker}",
+                                        font=("MS Serif", 15, "bold"))
             error_label.grid(row=2, column=1)
             return
 
-        figure = plt.Figure(figsize=(6, 5), dpi=100)
+        figure = plt.Figure(figsize=(6, 6), dpi=100)
         table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111))
         chart_type = FigureCanvasTkAgg(figure, frame)
         chart_type.draw()
-        chart_type.get_tk_widget().grid(row=2, column=0, columnspan=3)
-
+        chart_type.get_tk_widget().grid(row=2, column=0, columnspan=4)
 
     def _get_table(self, ticker, start_date, end_date, frame):
         try:
@@ -225,7 +229,6 @@ class HistoricalQuotes(Gui):
         thread = threading.Thread(target=self._get_table, args=(ticker, start_date, end_date, frame))
         thread.start()
 
-
     def _build_window(self):
         padx = 10
 
@@ -248,23 +251,24 @@ class HistoricalQuotes(Gui):
         ticker_choice.grid(row=0, column=0, padx=padx, pady=20)
 
         start_date_entry = tkcalendar.DateEntry(frame,
-                                          width=20,
-                                          bg="darkblue",
-                                          fg="white",
-                                          year=datetime.date.today().year,
-                                          font=("MS Serif", 15, "bold"))
-        start_date_entry.grid(row=0, column=1, padx=padx, pady=20)
-
-        end_date_entry = tkcalendar.DateEntry(frame,
                                                 width=20,
                                                 bg="darkblue",
                                                 fg="white",
                                                 year=datetime.date.today().year,
                                                 font=("MS Serif", 15, "bold"))
+        start_date_entry.grid(row=0, column=1, padx=padx, pady=20)
+
+        end_date_entry = tkcalendar.DateEntry(frame,
+                                              width=20,
+                                              bg="darkblue",
+                                              fg="white",
+                                              year=datetime.date.today().year,
+                                              font=("MS Serif", 15, "bold"))
         end_date_entry.grid(row=0, column=2, padx=padx, pady=20)
 
         run_button = tkinter.Button(frame, text="Get Data",
-                                       command=lambda: self.run_process(),
-                                       font=("MS Serif", 15, "bold"),
-                                       )
-        run_button.grid(row=1, column=1)
+                                    command=lambda: self.run_process(),
+                                    font=("MS Serif", 15, "bold"), bg='#d4af37')
+        run_button.grid(row=0, column=4, padx=padx, pady=20)
+
+        self._add_footer_buttons(frame, padx=20, row=3)
