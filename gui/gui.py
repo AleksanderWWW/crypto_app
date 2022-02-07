@@ -1,29 +1,36 @@
+"""Module providing screen objects for the application GUI.
+Each screen object must inherit from the Screen class.
+It needs to be supplied with config object and a screen name.
+Static dependencies for the screens are stored in the './static' dir."""
+
+
 import tkinter
+import tkinter.font
 import datetime
 import abc
 import threading
 
 import tkcalendar
-import tkinter.font
 import pandas_datareader._utils
 import requests.exceptions
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PIL import ImageTk, Image
 from api_client.client import Client
-import gui.utils as utils
+from gui import utils
 
 
 class Screen:
-    def __init__(self, config, screen_name):
+    def __init__(self, config, screen_name: str):
         self.original_config = config
         self.config = config["gui"]
         self.root = tkinter.Tk(screenName=screen_name)
-        self.root.title(self.config["TITLE"])
+        self.root.title(self.config["TITLE"] + " - " + screen_name)
         self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
         self.root.iconbitmap(r"static\window_icon.ico")
+
+    def get_original_config(self):
+        return self.original_config
 
     @abc.abstractmethod
     def _build_window(self):
@@ -55,7 +62,7 @@ class Screen:
 class StartScreen(Screen):
 
     def __init__(self, config) -> None:
-        super().__init__(config, screen_name="start_screen")
+        super().__init__(config, screen_name="home")
 
     def _build_window(self):
         frame = tkinter.Frame(self.root, pady=20, bg="black")
@@ -67,17 +74,17 @@ class StartScreen(Screen):
         im_frame = tkinter.Frame(frame, padx=5, pady=10, bg="black")
         im_frame.grid(row=1, column=0, sticky="", columnspan=3)
 
-        im = Image.open(r"static\title_page.jpg")
+        im_obj = Image.open(r"static\title_page.jpg")
 
-        im = im.resize((1000, 600))
-        image = ImageTk.PhotoImage(im)
+        im_obj = im_obj.resize((1000, 600))
+        image = ImageTk.PhotoImage(im_obj)
         img_label = tkinter.Label(im_frame, image=image)
         img_label.image = image
         img_label.pack()
 
-        start_button = tkinter.Button(frame, text="Daily quotes",
+        start_button = tkinter.Button(frame, text="Spot quotes",
                                       name="daily_close",
-                                      command=lambda: self._transition(Gui),
+                                      command=lambda: self._transition(SpotQuotes),
                                       width=20,
                                       pady=20,
                                       font=("MS Serif", 15, "bold"),
@@ -96,9 +103,9 @@ class StartScreen(Screen):
         btn2.grid(row=2, column=2)
 
 
-class Gui(Screen):
+class SpotQuotes(Screen):
 
-    def __init__(self, config, screen_name="main") -> None:
+    def __init__(self, config, screen_name="spot quotes") -> None:
         self.api_client = Client(config)  # will be used to execute user's queries
         # TODO: ticker list and/or asset names
         self.ticker_list = [utils.transform_ticker(tic["ticker"])
@@ -118,6 +125,7 @@ class Gui(Screen):
 
     def _build_ticker_choice(self, parent, **kwargs):
         ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
+                                             values=self.ticker_list,
                                              font=("MS Serif", 15, "bold"))
 
         def check_input(event):
@@ -202,23 +210,10 @@ class Gui(Screen):
         thread.start()
 
 
-class HistoricalQuotes(Gui):
-    def __init__(self, config, screen_name="historical_quotes") -> None:
+class HistoricalQuotes(SpotQuotes):
+    def __init__(self, config, screen_name="historical quotes") -> None:
         super().__init__(config, screen_name)
         self.res_container = {"result": None}
-
-    def _build_chart(self, frame, ticker, table=None):
-        if table is None:
-            error_label = tkinter.Label(frame, text=f"Could not load data for {ticker}",
-                                        font=("MS Serif", 15, "bold"))
-            error_label.grid(row=2, column=1)
-            return
-
-        figure = plt.Figure(figsize=(6, 6), dpi=100)
-        table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111))
-        chart_type = FigureCanvasTkAgg(figure, frame)
-        chart_type.draw()
-        chart_type.get_tk_widget().grid(row=2, column=0, columnspan=4)
 
     def _get_table(self, ticker, start_date, end_date, frame):
         try:
@@ -230,7 +225,7 @@ class HistoricalQuotes(Gui):
         self.loading_lbl.unload()
         self.loading_lbl.destroy()
 
-        self._build_chart(frame, ticker, table)
+        utils.build_chart(frame, ticker, table)
 
     def run_process(self):
         frame = self.root.children["!frame"]
@@ -243,7 +238,8 @@ class HistoricalQuotes(Gui):
         self.loading_lbl.load(r'static\loading.gif')
         self.root.update()
 
-        thread = threading.Thread(target=self._get_table, args=(ticker, start_date, end_date, frame))
+        thread = threading.Thread(target=self._get_table,
+                                  args=(ticker, start_date, end_date, frame))
         thread.start()
 
     def _build_window(self):
