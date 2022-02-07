@@ -4,6 +4,7 @@ certifi==2021.10.8
 charset-normalizer==2.0.11
 colorama==0.4.4
 cycler==0.11.0
+et-xmlfile==1.1.0
 fonttools==4.29.1
 idna==3.3
 isort==5.10.1
@@ -13,6 +14,7 @@ lxml==4.7.1
 matplotlib==3.5.1
 mccabe==0.6.1
 numpy==1.22.2
+openpyxl==3.0.9
 packaging==21.3
 pandas==1.4.0
 pandas-datareader==0.10.0

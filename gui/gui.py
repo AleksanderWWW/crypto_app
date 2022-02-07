@@ -3,9 +3,10 @@ Each screen object must inherit from the Screen class.
 It needs to be supplied with config object and a screen name.
 Static dependencies for the screens are stored in the './static' dir."""
 
-
 import tkinter
 import tkinter.font
+from tkinter import messagebox
+
 import datetime
 import abc
 import threading
@@ -90,7 +91,7 @@ class StartScreen(Screen):
                                       font=("MS Serif", 15, "bold"),
                                       bg='#d4af37')
         start_button.grid(row=2, column=0)
-        btn1 = tkinter.Button(frame, text="About", width=20,
+        btn1 = tkinter.Button(frame, text="Crypto news", width=20,
                               pady=20,
                               font=("MS Serif", 15, "bold"),
                               bg='#d4af37')
@@ -176,7 +177,6 @@ class SpotQuotes(Screen):
 
         search_button.grid(row=1, column=1, padx=padx, pady=60)
 
-
         self._add_footer_buttons(frame, padx=20, row=3)
 
     def _get_quote(self, ticker, date, out_label):
@@ -242,6 +242,17 @@ class HistoricalQuotes(SpotQuotes):
                                   args=(ticker, start_date, end_date, frame))
         thread.start()
 
+    def export_to_excel(self):
+        ticker = self.ticker_var.get().lower()
+        table = self.res_container["result"]
+        file_name = f"{ticker}_historical_data.xlsx"
+        if table is None:
+            messagebox.showerror("Error", "No data to export")
+            return
+
+        table.to_excel(file_name)
+        messagebox.showinfo("Export complete", "Data successfully exported")
+
     def _build_window(self):
         padx = 10
 
@@ -277,9 +288,22 @@ class HistoricalQuotes(SpotQuotes):
                                               font=("MS Serif", 15, "bold"))
         end_date_entry.grid(row=0, column=2, padx=padx, pady=20)
 
+        # ===========================================================================
+        # Fetch data and draw graph
+        # ===========================================================================
+
         run_button = tkinter.Button(frame, text="Get Data",
                                     command=lambda: self.run_process(),
                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
         run_button.grid(row=0, column=4, padx=padx, pady=20)
+
+        # ===========================================================================
+        # Export data to excel
+        # ===========================================================================
+        # TODO: different export options (xlsx, csv, json)
+        save_button = tkinter.Button(frame, text="Export",
+                                     command=lambda: self.export_to_excel(),
+                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
+        save_button.grid(row=3, column=1, padx=padx, pady=20)
 
         self._add_footer_buttons(frame, padx=20, row=3)
