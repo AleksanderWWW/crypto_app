@@ -1,1 +1,1 @@
-# stock_gui
+# CryptoApp - personalized crypto manager for desktops
