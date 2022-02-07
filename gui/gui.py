@@ -21,7 +21,7 @@ class Screen:
         self.root.title(self.config["TITLE"])
         self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
-        self.root.iconbitmap("window_icon.ico")
+        self.root.iconbitmap(r"static\window_icon.ico")
 
     @abc.abstractmethod
     def _build_window(self):
@@ -54,7 +54,7 @@ class StartScreen(Screen):
         im_frame = tkinter.Frame(frame, padx=5, pady=10, bg="black")
         im_frame.grid(row=1, column=0, sticky="", columnspan=3)
 
-        im = Image.open("title_page.jpg")
+        im = Image.open(r"static\title_page.jpg")
 
         im = im.resize((1000, 600))
         image = ImageTk.PhotoImage(im)
@@ -111,7 +111,7 @@ class Gui(Screen):
         frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
         frame.pack(expand=True, fill="both")
 
-        background_image = ImageTk.PhotoImage(Image.open("background.jpg"))
+        background_image = ImageTk.PhotoImage(Image.open(r"static\background.jpg"))
         background_label = tkinter.Label(frame, image=background_image)
         background_label.image = background_image
         background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -172,7 +172,7 @@ class Gui(Screen):
         ticker = self.ticker_var.get().lower()
         self.loading_lbl = utils.ImageLabel(frame)
         self.loading_lbl.grid(row=2, column=1, pady=60)
-        self.loading_lbl.load('loading.gif')
+        self.loading_lbl.load(r'static\loading.gif')
         result_label = tkinter.Label(frame, name="close_price", font=("MS Serif", 15, "bold"),
                                      text="waiting for the query to complete...")
         result_label.grid(row=2, column=1, pady=60)

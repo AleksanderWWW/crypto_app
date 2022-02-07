@@ -15,7 +15,7 @@ class Client:
         _api_key = os.environ["Polygon_API_Key"]
         self.route_config = self.config["routes"]
 
-        self.headers = {"Authorization": f"Bearer {self.access_config['API_KEY']}"}
+        self.headers = {"Authorization": f"Bearer {_api_key}"}
 
         self.tickers = self._load_tickers()
 
