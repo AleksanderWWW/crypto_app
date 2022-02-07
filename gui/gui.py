@@ -108,14 +108,33 @@ class Gui(Screen):
         self.ticker_var = tkinter.StringVar(self.root)
         self.adjusted_var = tkinter.StringVar(self.root)
         self.adjusted_var.set("adjusted")  # default option
-        if self.ticker_list:
-            self.ticker_var.set(self.ticker_list[0])  # default option
-        else:
+
+        if not self.ticker_list:
             self.ticker_var.set("Failed to load tickers")
             tkinter.Label(self.root, text="No internet connection!",
                           font=("MS Serif", 15, "bold")).pack()
 
         self.loading_lbl = None
+
+    def _build_ticker_choice(self, parent, **kwargs):
+        ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
+                                             font=("MS Serif", 15, "bold"))
+
+        def check_input(event):
+            value = event.widget.get()
+
+            if value == '':
+                ticker_choice['values'] = self.ticker_list
+            else:
+                data = []
+                for item in self.ticker_list:
+                    if value.lower() in item.lower():
+                        data.append(item)
+
+                ticker_choice['values'] = data
+
+        ticker_choice.bind('<KeyRelease>', check_input)
+        ticker_choice.grid(row=0, column=0, padx=kwargs["padx"], pady=20)
 
     def _build_window(self):
         padx = 20
@@ -127,9 +146,7 @@ class Gui(Screen):
         background_label.image = background_image
         background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-        ticker_choice = tkinter.ttk.Combobox(frame, textvariable=self.ticker_var,
-                                             values=self.ticker_list, font=("MS Serif", 15, "bold"))
-        ticker_choice.grid(row=0, column=0, padx=padx, pady=20)
+        self._build_ticker_choice(frame, padx=20)
 
         date_entry = tkcalendar.DateEntry(frame,
                                           width=30,
@@ -246,9 +263,7 @@ class HistoricalQuotes(Gui):
         # ===========================================================================
         # Input controls
         # ===========================================================================
-        ticker_choice = tkinter.ttk.Combobox(frame, textvariable=self.ticker_var,
-                                             values=self.ticker_list, font=("MS Serif", 15, "bold"))
-        ticker_choice.grid(row=0, column=0, padx=padx, pady=20)
+        self._build_ticker_choice(frame, padx=padx)
 
         start_date_entry = tkcalendar.DateEntry(frame,
                                                 width=20,
