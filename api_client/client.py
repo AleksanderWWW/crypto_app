@@ -1,6 +1,7 @@
 """Polygon.io API client"""
 
 import datetime
+import os
 
 import requests
 import requests.exceptions
@@ -11,7 +12,7 @@ import pandas_datareader.data as web
 class Client:
     def __init__(self, config) -> None:
         self.config = config
-        self.access_config = self.config["access"]
+        _api_key = os.environ["Polygon_API_Key"]
         self.route_config = self.config["routes"]
 
         self.headers = {"Authorization": f"Bearer {self.access_config['API_KEY']}"}
