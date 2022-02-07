@@ -7,6 +7,8 @@ import tkcalendar
 import tkinter.font
 import pandas_datareader._utils
 import requests.exceptions
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PIL import ImageTk, Image
 from api_client.client import Client
@@ -35,6 +37,7 @@ class Screen:
         new_screen_obj.run()
 
     def run(self):
+        self._build_window()
         self.root.mainloop()
 
 
@@ -42,7 +45,6 @@ class StartScreen(Screen):
 
     def __init__(self, config) -> None:
         super().__init__(config, screen_name="start_screen")
-        self._build_window()
 
     def _build_window(self):
         frame = tkinter.Frame(self.root, pady=20, bg="black")
@@ -77,20 +79,21 @@ class StartScreen(Screen):
         btn2 = tkinter.Button(frame, text="Historical data", width=20,
                                       pady=20,
                                       font=("MS Serif", 15, "bold"),
-                                      bg='#d4af37')
+                                      bg='#d4af37',
+                              command=lambda: self._transition(HistoricalQuotes))
         btn1.grid(row=2, column=1)
         btn2.grid(row=2, column=2)
 
 
 class Gui(Screen):
 
-    def __init__(self, config) -> None:
+    def __init__(self, config, screen_name="main") -> None:
         self.api_client = Client(config)  # will be used to execute user's queries
         # TODO: ticker list and/or asset names
         self.ticker_list = [utils.transform_ticker(tic["ticker"])
                             for tic in self.api_client.tickers]
 
-        super().__init__(config, screen_name="main")
+        super().__init__(config, screen_name)
         self.ticker_var = tkinter.StringVar(self.root)
         self.adjusted_var = tkinter.StringVar(self.root)
         self.adjusted_var.set("adjusted")  # default option
@@ -101,9 +104,6 @@ class Gui(Screen):
             tkinter.Label(self.root, text="No internet connection!",
                           font=("MS Serif", 15, "bold")).pack()
 
-        self._build_window()
-
-        self.daily_res = {"result": None}
         self.loading_lbl = None
 
     def _build_window(self):
@@ -167,7 +167,6 @@ class Gui(Screen):
 
     def get_daily_open_close(self):
         frame = self.root.children["!frame"]
-        #frame = self.root
         date = datetime.datetime.strptime(frame.children["!dateentry"].get(), "%m/%d/%y")
         ticker = self.ticker_var.get().lower()
         self.loading_lbl = utils.ImageLabel(frame)
@@ -181,5 +180,91 @@ class Gui(Screen):
         thread = threading.Thread(target=self._get_quote, args=(ticker, date, result_label))
         thread.start()
 
-    def run(self):
-        self.root.mainloop()
+
+class HistoricalQuotes(Gui):
+    def __init__(self, config, screen_name="historical_quotes") -> None:
+        super().__init__(config, screen_name)
+        self.res_container = {"result": None}
+
+    def _build_chart(self, frame, ticker, table=None):
+        if table is None:
+            error_label = tkinter.Label(frame, text=f"Could not load data for {ticker}")
+            error_label.grid(row=2, column=1)
+            return
+
+        figure = plt.Figure(figsize=(6, 5), dpi=100)
+        table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111))
+        chart_type = FigureCanvasTkAgg(figure, frame)
+        chart_type.draw()
+        chart_type.get_tk_widget().grid(row=2, column=0, columnspan=3)
+
+
+    def _get_table(self, ticker, start_date, end_date, frame):
+        try:
+            table = self.api_client.get_hist_data(ticker, start_date, end_date)
+        except pandas_datareader._utils.RemoteDataError:
+            table = None
+        self.res_container["result"] = table
+
+        self.loading_lbl.unload()
+        self.loading_lbl.destroy()
+
+        self._build_chart(frame, ticker, table)
+
+    def run_process(self):
+        frame = self.root.children["!frame"]
+
+        start_date = datetime.datetime.strptime(frame.children["!dateentry"].get(), "%m/%d/%y")
+        end_date = datetime.datetime.strptime(frame.children["!dateentry2"].get(), "%m/%d/%y")
+        ticker = self.ticker_var.get().lower()
+        self.loading_lbl = utils.ImageLabel(frame)
+        self.loading_lbl.grid(row=2, column=1)
+        self.loading_lbl.load(r'static\loading.gif')
+        self.root.update()
+
+        thread = threading.Thread(target=self._get_table, args=(ticker, start_date, end_date, frame))
+        thread.start()
+
+
+    def _build_window(self):
+        padx = 10
+
+        # ===========================================================================
+        # Background image
+        # ===========================================================================
+        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
+        frame.pack(expand=True, fill="both")
+
+        background_image = ImageTk.PhotoImage(Image.open(r"static\background.jpg"))
+        background_label = tkinter.Label(frame, image=background_image)
+        background_label.image = background_image
+        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # ===========================================================================
+        # Input controls
+        # ===========================================================================
+        ticker_choice = tkinter.ttk.Combobox(frame, textvariable=self.ticker_var,
+                                             values=self.ticker_list, font=("MS Serif", 15, "bold"))
+        ticker_choice.grid(row=0, column=0, padx=padx, pady=20)
+
+        start_date_entry = tkcalendar.DateEntry(frame,
+                                          width=20,
+                                          bg="darkblue",
+                                          fg="white",
+                                          year=datetime.date.today().year,
+                                          font=("MS Serif", 15, "bold"))
+        start_date_entry.grid(row=0, column=1, padx=padx, pady=20)
+
+        end_date_entry = tkcalendar.DateEntry(frame,
+                                                width=20,
+                                                bg="darkblue",
+                                                fg="white",
+                                                year=datetime.date.today().year,
+                                                font=("MS Serif", 15, "bold"))
+        end_date_entry.grid(row=0, column=2, padx=padx, pady=20)
+
+        run_button = tkinter.Button(frame, text="Get Data",
+                                       command=lambda: self.run_process(),
+                                       font=("MS Serif", 15, "bold"),
+                                       )
+        run_button.grid(row=1, column=1)
