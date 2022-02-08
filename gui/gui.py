@@ -56,6 +56,17 @@ class Screen:
         refresh_button.grid(row=kwargs["row"], column=kwargs["col_refresh"],
                             padx=kwargs["padx"], pady=20)
 
+    def _add_frame_with_background(self, im_path):
+        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
+        frame.pack(expand=True, fill="both")
+
+        background_image = ImageTk.PhotoImage(Image.open(im_path))
+        background_label = tkinter.Label(frame, image=background_image)
+        background_label.image = background_image
+        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        return frame
+
     def run(self):
         self._build_window()
         self.root.mainloop()
@@ -148,13 +159,7 @@ class SpotQuotes(Screen):
 
     def _build_window(self):
         padx = 20
-        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
-        frame.pack(expand=True, fill="both")
-
-        background_image = ImageTk.PhotoImage(Image.open(r"static\background.jpg"))
-        background_label = tkinter.Label(frame, image=background_image)
-        background_label.image = background_image
-        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        frame = self._add_frame_with_background(r"static\background.jpg")
 
         self._build_ticker_choice(frame, padx=20)
 
@@ -273,16 +278,7 @@ class HistoricalQuotes(SpotQuotes):
     def _build_window(self):
         padx = 10
 
-        # ===========================================================================
-        # Background image
-        # ===========================================================================
-        frame = tkinter.Frame(self.root, padx=20, pady=20, bg="black")
-        frame.pack(expand=True, fill="both")
-
-        background_image = ImageTk.PhotoImage(Image.open(r"static\background.jpg"))
-        background_label = tkinter.Label(frame, image=background_image)
-        background_label.image = background_image
-        background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        frame = self._add_frame_with_background(r"static\background.jpg")
 
         # ===========================================================================
         # Input controls
