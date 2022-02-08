@@ -173,7 +173,8 @@ class SpotQuotes(Screen):
 
         adjusted_choice = tkinter.ttk.Combobox(frame, textvariable=self.adjusted_var,
                                                values=["adjusted", "not adjusted"],
-                                               font=("MS Serif", 15, "bold"))
+                                               font=("MS Serif", 15, "bold"),
+                                               state="readonly")
 
         search_button = tkinter.Button(frame, text="Search",
                                        command=lambda: self.get_daily_open_close(),
@@ -319,6 +320,7 @@ class HistoricalQuotes(SpotQuotes):
         format_choice = tkinter.ttk.Combobox(frame, textvariable=self.export_format_var,
                                              values=self.export_formats,
                                              width=10,
+                                             state="readonly",
                                              font=("MS Serif", 15, "bold"))
         format_choice.grid(row=3, column=1, padx=padx, pady=20)
         save_button = tkinter.Button(frame, text="Export",
