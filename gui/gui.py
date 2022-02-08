@@ -26,7 +26,7 @@ class Screen:
         self.config = config["gui"]
         self.root = tkinter.Tk(screenName=screen_name)
         self.root.title(self.config["TITLE"] + " - " + screen_name)
-        self.root.resizable(False, False)
+        #self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
         self.root.iconbitmap(r"static\window_icon.ico")
 
@@ -48,12 +48,13 @@ class Screen:
         back_button = tkinter.Button(parent, text="Back",
                                      command=lambda: self._transition(StartScreen),
                                      font=("MS Serif", 15, "bold"), bg='#d4af37')
-        back_button.grid(row=kwargs["row"], column=0, padx=kwargs["padx"], pady=20)
+        back_button.grid(row=kwargs["row"], column=kwargs["col_back"], padx=kwargs["padx"], pady=20)
 
         refresh_button = tkinter.Button(parent, text="Refresh",
                                         command=lambda: self._transition(self.__class__),
                                         font=("MS Serif", 15, "bold"), bg='#d4af37')
-        refresh_button.grid(row=kwargs["row"], column=2, padx=kwargs["padx"], pady=20)
+        refresh_button.grid(row=kwargs["row"], column=kwargs["col_refresh"],
+                            padx=kwargs["padx"], pady=20)
 
     def run(self):
         self._build_window()
@@ -177,7 +178,7 @@ class SpotQuotes(Screen):
 
         search_button.grid(row=1, column=1, padx=padx, pady=60)
 
-        self._add_footer_buttons(frame, padx=20, row=3)
+        self._add_footer_buttons(frame, padx=20, row=3, col_refresh=2, col_back=0)
 
     def _get_quote(self, ticker, date, out_label):
         try:
@@ -214,6 +215,9 @@ class HistoricalQuotes(SpotQuotes):
     def __init__(self, config, screen_name="historical quotes") -> None:
         super().__init__(config, screen_name)
         self.res_container = {"result": None}
+        self.export_formats = ["csv", "xlsx", "json"]
+        self.export_format_var = tkinter.StringVar(self.root)
+        self.export_format_var.set(self.export_formats[0])
 
     def _get_table(self, ticker, start_date, end_date, frame):
         try:
@@ -243,14 +247,27 @@ class HistoricalQuotes(SpotQuotes):
         thread.start()
 
     def export_to_excel(self):
+        exp_format = self.export_format_var.get()
         ticker = self.ticker_var.get().lower()
         table = self.res_container["result"]
-        file_name = f"{ticker}_historical_data.xlsx"
+        file_name = f"{ticker}_historical_data" + "." + exp_format
         if table is None:
             messagebox.showerror("Error", "No data to export")
             return
 
-        table.to_excel(file_name)
+        if exp_format == "csv":
+            table.to_csv(file_name)
+
+        elif exp_format == "xlsx":
+            table.to_excel(file_name)
+
+        elif exp_format == "json":
+            table.to_json(file_name)
+
+        else:
+            messagebox.showerror("Invalid export format", f"Export format '{exp_format}' "
+                                                          f"not recoginzed.")
+            return
         messagebox.showinfo("Export complete", "Data successfully exported")
 
     def _build_window(self):
@@ -295,15 +312,18 @@ class HistoricalQuotes(SpotQuotes):
         run_button = tkinter.Button(frame, text="Get Data",
                                     command=lambda: self.run_process(),
                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
-        run_button.grid(row=0, column=4, padx=padx, pady=20)
+        run_button.grid(row=0, column=3, padx=padx, pady=20)
 
         # ===========================================================================
         # Export data to excel
         # ===========================================================================
-        # TODO: different export options (xlsx, csv, json)
+        format_choice = tkinter.ttk.Combobox(frame, textvariable=self.export_format_var,
+                                             values=self.export_formats,
+                                             font=("MS Serif", 15, "bold"))
+        format_choice.grid(row=3, column=1, padx=padx, pady=20)
         save_button = tkinter.Button(frame, text="Export",
                                      command=lambda: self.export_to_excel(),
                                      font=("MS Serif", 15, "bold"), bg='#d4af37')
-        save_button.grid(row=3, column=1, padx=padx, pady=20)
+        save_button.grid(row=3, column=2, padx=padx, pady=20)
 
-        self._add_footer_buttons(frame, padx=20, row=3)
+        self._add_footer_buttons(frame, padx=20, row=3, col_back=0, col_refresh=3)
