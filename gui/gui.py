@@ -26,7 +26,7 @@ class Screen:
         self.config = config["gui"]
         self.root = tkinter.Tk(screenName=screen_name)
         self.root.title(self.config["TITLE"] + " - " + screen_name)
-        #self.root.resizable(False, False)
+        self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
         self.root.iconbitmap(r"static\window_icon.ico")
 
@@ -220,7 +220,7 @@ class HistoricalQuotes(SpotQuotes):
     def __init__(self, config, screen_name="historical quotes") -> None:
         super().__init__(config, screen_name)
         self.res_container = {"result": None}
-        self.export_formats = ["csv", "xlsx", "json"]
+        self.export_formats = ["csv", "xlsx", "json", "html"]
         self.export_format_var = tkinter.StringVar(self.root)
         self.export_format_var.set(self.export_formats[0])
 
@@ -269,6 +269,9 @@ class HistoricalQuotes(SpotQuotes):
         elif exp_format == "json":
             table.to_json(file_name)
 
+        elif exp_format == "html":
+            table.to_html(file_name)
+
         else:
             messagebox.showerror("Invalid export format", f"Export format '{exp_format}' "
                                                           f"not recoginzed.")
@@ -315,6 +318,7 @@ class HistoricalQuotes(SpotQuotes):
         # ===========================================================================
         format_choice = tkinter.ttk.Combobox(frame, textvariable=self.export_format_var,
                                              values=self.export_formats,
+                                             width=10,
                                              font=("MS Serif", 15, "bold"))
         format_choice.grid(row=3, column=1, padx=padx, pady=20)
         save_button = tkinter.Button(frame, text="Export",
