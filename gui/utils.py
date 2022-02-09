@@ -62,7 +62,9 @@ def build_chart(frame, ticker, table=None, legend=None):
         error_label.grid(row=2, column=1)
         return
     figure = plt.Figure(figsize=(7, 5.5), dpi=100)
-    table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111), legend=legend)
+    ax = figure.add_subplot(111)
+    table["Close"].plot(kind="line", title="Historical Data Graph", ax=ax)
+    ax.legend(legend)
     chart_type = FigureCanvasTkAgg(figure, frame)
     chart_type.draw()
     chart_type.get_tk_widget().grid(row=2, column=0, columnspan=3)

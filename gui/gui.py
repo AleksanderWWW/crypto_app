@@ -234,21 +234,26 @@ class HistoricalQuotes(SpotQuotes):
         self.table = pd.DataFrame()
 
     def _get_table(self, ticker, start_date, end_date, frame):
-        self.chosen_tickers.append(ticker)
-        try:
-            table = api_client.get_hist_data(ticker, start_date, end_date)
-            if self.table.empty:
-                self.table = table
-            else:
-                self.table = pd.concat([self.table, table], axis=1)
+        graph = True
+        if ticker in self.chosen_tickers:
+            graph = False
+        else:
 
-        except pandas_datareader._utils.RemoteDataError:
-            pass
+            self.chosen_tickers.append(ticker)
+            try:
+                table = api_client.get_hist_data(ticker, start_date, end_date)
+                if self.table.empty:
+                    self.table = table
+                else:
+                    self.table = pd.concat([self.table, table], axis=1)
+
+            except pandas_datareader._utils.RemoteDataError:
+                pass
 
         self.loading_lbl.unload()
         self.loading_lbl.destroy()
-
-        utils.build_chart(frame, ticker, self.table, self.chosen_tickers)
+        if graph:
+            utils.build_chart(frame, ticker, self.table, legend=self.chosen_tickers)
 
     def run_process(self):
         frame = self.root.children["!frame"]
@@ -259,6 +264,7 @@ class HistoricalQuotes(SpotQuotes):
         self.loading_lbl = utils.ImageLabel(frame)
         self.loading_lbl.grid(row=2, column=1)
         self.loading_lbl.load(r'static\loading.gif')
+
         self.root.update()
 
         thread = threading.Thread(target=self._get_table,
@@ -267,8 +273,8 @@ class HistoricalQuotes(SpotQuotes):
 
     def export_to_excel(self):
         exp_format = self.export_format_var.get()
-        ticker = self.ticker_var.get().lower()
-        file_name = f"{ticker}_historical_data" + "." + exp_format
+        file_root = "&".join(self.chosen_tickers)
+        file_name = f"{file_root}_historical_data" + "." + exp_format
         if self.table.empty:
             messagebox.showerror("Error", "No data to export")
             return
@@ -322,7 +328,8 @@ class HistoricalQuotes(SpotQuotes):
         # ===========================================================================
 
         run_button = tkinter.Button(frame, text="Graph",
-                                    command=lambda: self.run_process(),
+                                    command=lambda: self.run_process() or start_date_entry.config(state="disabled")
+                                    or end_date_entry.config(state="disabled"),
                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
         run_button.grid(row=0, column=3, padx=padx, pady=20)
 
