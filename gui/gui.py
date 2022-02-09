@@ -14,10 +14,21 @@ import threading
 import tkcalendar
 import pandas_datareader._utils
 import requests.exceptions
+import pandas as pd
 
 from PIL import ImageTk, Image
 from api_client.client import Client
 from gui import utils
+
+
+api_client = Client()  # will be used to execute user's queries
+
+try:
+    ticker_list = [utils.transform_ticker(tic["ticker"])
+                   for tic in api_client.tickers]
+except Exception as e:
+    print(e)
+    ticker_list = []
 
 
 class Screen:
@@ -29,6 +40,7 @@ class Screen:
         self.root.resizable(False, False)
         self.root.geometry(self.config["GEOM"])
         self.root.iconbitmap(r"static\window_icon.ico")
+        self.ticker_var = tkinter.StringVar(self.root)
 
     def get_original_config(self):
         return self.original_config
@@ -119,17 +131,11 @@ class StartScreen(Screen):
 class SpotQuotes(Screen):
 
     def __init__(self, config, screen_name="spot quotes") -> None:
-        self.api_client = Client(config)  # will be used to execute user's queries
-        # TODO: ticker list and/or asset names
-        self.ticker_list = [utils.transform_ticker(tic["ticker"])
-                            for tic in self.api_client.tickers]
-
         super().__init__(config, screen_name)
-        self.ticker_var = tkinter.StringVar(self.root)
         self.adjusted_var = tkinter.StringVar(self.root)
         self.adjusted_var.set("adjusted")  # default option
 
-        if not self.ticker_list:
+        if not ticker_list:
             self.ticker_var.set("Failed to load tickers")
             tkinter.Label(self.root, text="No internet connection!",
                           font=("MS Serif", 15, "bold")).pack()
@@ -138,17 +144,17 @@ class SpotQuotes(Screen):
 
     def _build_ticker_choice(self, parent, **kwargs):
         ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
-                                             values=self.ticker_list,
+                                             values=ticker_list,
                                              font=("MS Serif", 15, "bold"))
 
         def check_input(event):
             value = event.widget.get()
 
             if value == '':
-                ticker_choice['values'] = self.ticker_list
+                ticker_choice['values'] = ticker_list
             else:
                 data = []
-                for item in self.ticker_list:
+                for item in ticker_list:
                     if value.lower() in item.lower():
                         data.append(item)
 
@@ -224,18 +230,25 @@ class HistoricalQuotes(SpotQuotes):
         self.export_formats = ["csv", "xlsx", "json", "html"]
         self.export_format_var = tkinter.StringVar(self.root)
         self.export_format_var.set(self.export_formats[0])
+        self.chosen_tickers = []
+        self.table = pd.DataFrame()
 
     def _get_table(self, ticker, start_date, end_date, frame):
+        self.chosen_tickers.append(ticker)
         try:
-            table = self.api_client.get_hist_data(ticker, start_date, end_date)
+            table = api_client.get_hist_data(ticker, start_date, end_date)
+            if self.table.empty:
+                self.table = table
+            else:
+                self.table = pd.concat([self.table, table], axis=1)
+
         except pandas_datareader._utils.RemoteDataError:
-            table = None
-        self.res_container["result"] = table
+            pass
 
         self.loading_lbl.unload()
         self.loading_lbl.destroy()
 
-        utils.build_chart(frame, ticker, table)
+        utils.build_chart(frame, ticker, self.table, self.chosen_tickers)
 
     def run_process(self):
         frame = self.root.children["!frame"]
@@ -255,23 +268,22 @@ class HistoricalQuotes(SpotQuotes):
     def export_to_excel(self):
         exp_format = self.export_format_var.get()
         ticker = self.ticker_var.get().lower()
-        table = self.res_container["result"]
         file_name = f"{ticker}_historical_data" + "." + exp_format
-        if table is None:
+        if self.table.empty:
             messagebox.showerror("Error", "No data to export")
             return
 
         if exp_format == "csv":
-            table.to_csv(file_name)
+            self.table.to_csv(file_name)
 
         elif exp_format == "xlsx":
-            table.to_excel(file_name)
+            self.table.to_excel(file_name)
 
         elif exp_format == "json":
-            table.to_json(file_name)
+            self.table.to_json(file_name)
 
         elif exp_format == "html":
-            table.to_html(file_name)
+            self.table.to_html(file_name)
 
         else:
             messagebox.showerror("Invalid export format", f"Export format '{exp_format}' "
@@ -309,7 +321,7 @@ class HistoricalQuotes(SpotQuotes):
         # Fetch data and draw graph
         # ===========================================================================
 
-        run_button = tkinter.Button(frame, text="Get Data",
+        run_button = tkinter.Button(frame, text="Graph",
                                     command=lambda: self.run_process(),
                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
         run_button.grid(row=0, column=3, padx=padx, pady=20)

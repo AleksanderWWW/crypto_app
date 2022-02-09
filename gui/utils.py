@@ -55,15 +55,14 @@ def transform_ticker(ticker: str) -> str:
     return base + "-" + curr
 
 
-def build_chart(frame, ticker, table=None):
-    if table is None:
+def build_chart(frame, ticker, table=None, legend=None):
+    if table.empty:
         error_label = tk.Label(frame, text=f"Could not load data for {ticker}",
                                     font=("MS Serif", 15, "bold"))
         error_label.grid(row=2, column=1)
         return
-
-    figure = plt.Figure(figsize=(9, 5.5), dpi=100)
-    table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111))
+    figure = plt.Figure(figsize=(7, 5.5), dpi=100)
+    table["Close"].plot(kind="line", title=f"Close for {ticker}", ax=figure.add_subplot(111), legend=legend)
     chart_type = FigureCanvasTkAgg(figure, frame)
     chart_type.draw()
-    chart_type.get_tk_widget().grid(row=2, column=0, columnspan=4)
+    chart_type.get_tk_widget().grid(row=2, column=0, columnspan=3)

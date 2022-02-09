@@ -10,21 +10,21 @@ import pandas_datareader.data as web
 
 
 class Client:
-    def __init__(self, config) -> None:
-        self.config = config
-        _api_key = os.environ["Polygon_API_Key"]
-        self.route_config = self.config["routes"]
+    BASE_URL = "https://api.polygon.io"
+    TICKERS = "/v3/reference/tickers?market=crypto&active=true&sort=ticker&order=asc&limit=1000"
 
+    def __init__(self) -> None:
+        _api_key = os.environ["Polygon_API_Key"]
         self.headers = {"Authorization": f"Bearer {_api_key}"}
 
         self.tickers = self._load_tickers()
 
     def _load_tickers(self) -> list:
-        url = self.route_config["BASE_URL"] + self.route_config["TICKERS"]
+        url = self.BASE_URL + self.TICKERS
         try:
             r = requests.get(url, headers=self.headers)
             results = r.json()["results"]
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, KeyError):
             return []
 
         return results
