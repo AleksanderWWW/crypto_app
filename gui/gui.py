@@ -388,17 +388,19 @@ class CryptoNews(ScreenWithTickers):
 
         row = 1
         for news_piece in news[:5]:
-            tkinter.Label(frame, text=news_piece["date"],
+            news_frame = tkinter.Frame(frame, borderwidth=2, padx=10)
+            news_frame.grid(row=row, column=0)
+            tkinter.Label(news_frame, text=news_piece["date"],
                           font=("Times New Roman", 12, "bold"),
-                          padx=10, pady=10).grid(row=row, column=0, columnspan=1)
-            tkinter.Label(frame, text=news_piece["title"],
+                          padx=10, pady=10).grid(row=0, column=0, columnspan=1)
+            tkinter.Label(news_frame, text=news_piece["title"],
                           font=("Times New Roman", 12, "bold"),
-                          padx=10, pady=10).grid(row=row, column=1, columnspan=2)
-            tkinter.Label(frame, text=news_piece["desc"],
-                          padx=10, pady=10).grid(row=row+1, column=1, columnspan=2)
-            tkinter.Label(frame, text=news_piece["link"],
-                          padx=10, fg="blue").grid(row=row + 2, column=0, columnspan=3)
-            row += 3
+                          padx=10, pady=10).grid(row=0, column=1, columnspan=2)
+            tkinter.Label(news_frame, text=news_piece["desc"],
+                          padx=10, pady=10).grid(row=1, column=1, columnspan=2)
+            tkinter.Label(news_frame, text=news_piece["link"],
+                          padx=10, fg="blue").grid(row=2, column=0, columnspan=3)
+            row += 1
 
     def _build_window(self):
         frame = self._add_frame_with_background(r"static\background2.jpg")
