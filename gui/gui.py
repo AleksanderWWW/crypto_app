@@ -140,7 +140,8 @@ class StartScreen(Screen):
         frame = tkinter.Frame(self.root, pady=20, bg="black")
         frame.pack(fill="both", expand=True)
         welcome_label = tkinter.Label(frame, text="Welcome to Crypto App!",
-                                      font=("MS Serif", 20, "bold"))
+                                      font=("Open Sans", 20, "bold"), fg="#d4af37",
+                                      bg="black")
         welcome_label.grid(row=0, column=0, columnspan=3)
 
         im_frame = tkinter.Frame(frame, padx=5, pady=10, bg="black")
@@ -380,38 +381,57 @@ class CryptoNews(ScreenWithTickers):
         super().__init__(config, screen_name)
         self.tickers_news: list = ["Bitcoin", "Ethereum", "Tether", "BNB"]
         self.ticker_var.set(self.tickers_news[0])
+        self.news_frame = None
 
     def search_news(self, frame):
+        if self.news_frame is not None:
+            self.news_frame.destroy()
+            frame.update()
+        self.news_frame = tkinter.Frame(frame, width=10)
+        self.news_frame.pack_propagate(0)
+        self.news_frame.grid(row=1, column=0)
         ticker = self.ticker_var.get()
         google_news.search(ticker)
         news = google_news.result()
-
-        row = 1
+        google_news.clear()
+        print(ticker)
+        row = 0
         for news_piece in news[:5]:
-            news_frame = tkinter.Frame(frame, borderwidth=2, padx=10)
-            news_frame.grid(row=row, column=0)
-            tkinter.Label(news_frame, text=news_piece["date"],
+            news_frame = tkinter.Frame(self.news_frame, borderwidth=2, padx=10)
+            news_frame.grid(row=row, column=0, sticky=tkinter.W)
+            tkinter.Label(news_frame, text="[" + news_piece["date"] + "]" + "  " + news_piece["title"],
+                          justify=tkinter.LEFT,
                           font=("Times New Roman", 12, "bold"),
-                          padx=10, pady=10).grid(row=0, column=0, columnspan=1)
-            tkinter.Label(news_frame, text=news_piece["title"],
-                          font=("Times New Roman", 12, "bold"),
-                          padx=10, pady=10).grid(row=0, column=1, columnspan=2)
+                          padx=10, pady=10).grid(row=0, column=0, columnspan=1, sticky=tkinter.W)
             tkinter.Label(news_frame, text=news_piece["desc"],
-                          padx=10, pady=10).grid(row=1, column=1, columnspan=2)
-            tkinter.Label(news_frame, text=news_piece["link"],
-                          padx=10, fg="blue").grid(row=2, column=0, columnspan=3)
+                          justify=tkinter.LEFT,
+                          padx=10, pady=10).grid(row=1, column=0, columnspan=2, sticky=tkinter.W)
+            url = tkinter.Label(news_frame, text=news_piece["link"],
+                          justify=tkinter.LEFT,
+                          padx=10, fg="blue")
+            url.grid(row=2, column=0, columnspan=3, sticky=tkinter.W)
+
+            def make_lambda_click():
+                link = news_piece["link"]
+                return lambda x: print(link)
+
+            url.bind("<Button-1>", make_lambda_click())
+
+            frame.update()
             row += 1
 
     def _build_window(self):
         frame = self._add_frame_with_background(r"static\background2.jpg")
+        news_frame = tkinter.Frame(self.root)
+        news_frame.pack(expand=True, fill='both')
         self._build_ticker_choice(frame, self.tickers_news, padx=20)
         search_button = tkinter.Button(
             frame,
             text="Search News",
-            command=lambda: self.search_news(frame),
+            command=lambda: self.search_news(news_frame),
             font=("MS Serif", 15, "bold"),
             bg='#d4af37'
         )
-        search_button.grid(row=0, column=1)
+        search_button.grid(row=0, column=2)
 
 
