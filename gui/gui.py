@@ -17,10 +17,15 @@ import requests.exceptions
 import pandas as pd
 
 from PIL import ImageTk, Image
+from GoogleNews import GoogleNews
+
 from api_client.client import Client
 from gui import utils
 
+# ===============================================================
+# SETUP
 
+# setup API client
 api_client = Client()  # will be used to execute user's queries
 
 try:
@@ -29,6 +34,15 @@ try:
 except Exception as e:
     print(e)
     ticker_list = []
+
+# setup Google News API client
+google_news = GoogleNews(
+    period="7d",
+    lang="en",
+    encode="utf-8"
+)
+
+# ===============================================================
 
 
 class Screen:
@@ -84,6 +98,39 @@ class Screen:
         self.root.mainloop()
 
 
+class ScreenWithTickers(Screen):
+    def __init__(self, config, screen_name=""):
+        super().__init__(config, screen_name)
+        self.loading_lbl = None
+
+    @abc.abstractmethod
+    def _build_window(self):
+        ...
+
+    def _build_ticker_choice(self, parent, tickers=ticker_list, **kwargs):
+        ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
+                                             values=tickers,
+                                             font=("MS Serif", 15, "bold"))
+
+        def check_input(event):
+            value = event.widget.get()
+
+            if value == '':
+                ticker_choice['values'] = tickers
+            else:
+                data = []
+                for item in tickers:
+                    if value.lower() in item.lower():
+                        data.append(item)
+
+                ticker_choice['values'] = data
+
+        ticker_choice.bind('<KeyRelease>', check_input)
+        padx = kwargs.pop("padx", 20)
+        pady = kwargs.pop("pady", 20)
+        ticker_choice.grid(row=0, column=0, padx=padx, pady=pady)
+
+
 class StartScreen(Screen):
 
     def __init__(self, config) -> None:
@@ -118,7 +165,8 @@ class StartScreen(Screen):
         btn1 = tkinter.Button(frame, text="Crypto news", width=20,
                               pady=20,
                               font=("MS Serif", 15, "bold"),
-                              bg='#d4af37')
+                              bg='#d4af37',
+                              command=lambda: self._transition(CryptoNews))
         btn2 = tkinter.Button(frame, text="Historical data", width=20,
                               pady=20,
                               font=("MS Serif", 15, "bold"),
@@ -128,7 +176,7 @@ class StartScreen(Screen):
         btn2.grid(row=2, column=2)
 
 
-class SpotQuotes(Screen):
+class SpotQuotes(ScreenWithTickers):
 
     def __init__(self, config, screen_name="spot quotes") -> None:
         super().__init__(config, screen_name)
@@ -139,29 +187,6 @@ class SpotQuotes(Screen):
             self.ticker_var.set("Failed to load tickers")
             tkinter.Label(self.root, text="No internet connection!",
                           font=("MS Serif", 15, "bold")).pack()
-
-        self.loading_lbl = None
-
-    def _build_ticker_choice(self, parent, **kwargs):
-        ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
-                                             values=ticker_list,
-                                             font=("MS Serif", 15, "bold"))
-
-        def check_input(event):
-            value = event.widget.get()
-
-            if value == '':
-                ticker_choice['values'] = ticker_list
-            else:
-                data = []
-                for item in ticker_list:
-                    if value.lower() in item.lower():
-                        data.append(item)
-
-                ticker_choice['values'] = data
-
-        ticker_choice.bind('<KeyRelease>', check_input)
-        ticker_choice.grid(row=0, column=0, padx=kwargs["padx"], pady=20)
 
     def _build_window(self):
         padx = 20
@@ -194,7 +219,7 @@ class SpotQuotes(Screen):
 
     def _get_quote(self, ticker, date, out_label):
         try:
-            close = self.api_client.get_daily_open_close(ticker, date, str(self.adjusted_var))
+            close = api_client.get_daily_open_close(ticker, date, str(self.adjusted_var))
             text = f"Closing price for {ticker.upper()}:\n {close}"
         except KeyError:
             text = f"No data for {date.strftime('%Y-%m-%d')}"
@@ -223,7 +248,7 @@ class SpotQuotes(Screen):
         thread.start()
 
 
-class HistoricalQuotes(SpotQuotes):
+class HistoricalQuotes(ScreenWithTickers):
     def __init__(self, config, screen_name="historical quotes") -> None:
         super().__init__(config, screen_name)
         self.res_container = {"result": None}
@@ -348,3 +373,43 @@ class HistoricalQuotes(SpotQuotes):
         save_button.grid(row=3, column=2, padx=padx, pady=20)
 
         self._add_footer_buttons(frame, padx=20, row=3, col_back=0, col_refresh=3)
+
+
+class CryptoNews(ScreenWithTickers):
+    def __init__(self, config, screen_name="crypto_news") -> None:
+        super().__init__(config, screen_name)
+        self.tickers_news: list = ["Bitcoin", "Ethereum", "Tether", "BNB"]
+        self.ticker_var.set(self.tickers_news[0])
+
+    def search_news(self, frame):
+        ticker = self.ticker_var.get()
+        google_news.search(ticker)
+        news = google_news.result()
+
+        row = 1
+        for news_piece in news[:5]:
+            tkinter.Label(frame, text=news_piece["date"],
+                          font=("Times New Roman", 12, "bold"),
+                          padx=10, pady=10).grid(row=row, column=0, columnspan=1)
+            tkinter.Label(frame, text=news_piece["title"],
+                          font=("Times New Roman", 12, "bold"),
+                          padx=10, pady=10).grid(row=row, column=1, columnspan=2)
+            tkinter.Label(frame, text=news_piece["desc"],
+                          padx=10, pady=10).grid(row=row+1, column=1, columnspan=2)
+            tkinter.Label(frame, text=news_piece["link"],
+                          padx=10, fg="blue").grid(row=row + 2, column=0, columnspan=3)
+            row += 3
+
+    def _build_window(self):
+        frame = self._add_frame_with_background(r"static\background2.jpg")
+        self._build_ticker_choice(frame, self.tickers_news, padx=20)
+        search_button = tkinter.Button(
+            frame,
+            text="Search News",
+            command=lambda: self.search_news(frame),
+            font=("MS Serif", 15, "bold"),
+            bg='#d4af37'
+        )
+        search_button.grid(row=0, column=1)
+
+
