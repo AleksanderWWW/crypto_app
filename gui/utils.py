@@ -1,6 +1,7 @@
 """Utility functions for the application GUI"""
 
 import tkinter as tk
+import webbrowser
 from PIL import Image, ImageTk
 from itertools import count, cycle
 
@@ -68,3 +69,7 @@ def build_chart(frame, ticker, table=None, legend=None):
     chart_type = FigureCanvasTkAgg(figure, frame)
     chart_type.draw()
     chart_type.get_tk_widget().grid(row=2, column=0, columnspan=3)
+
+
+def open_url(url: str):
+    webbrowser.open_new_tab(url)
