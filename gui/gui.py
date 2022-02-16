@@ -20,6 +20,7 @@ from PIL import ImageTk, Image
 from GoogleNews import GoogleNews
 
 from api_client.client import Client
+from api_client.coinmarket_scraper import Scraper
 from gui import utils
 
 # ===============================================================
@@ -42,6 +43,14 @@ google_news = GoogleNews(
     encode="utf-8"
 )
 
+
+# get coin names for news scraping
+scraper = Scraper()
+try:
+    coin_names = scraper.scrape_coin_names()
+except Exception as e:
+    print(e)
+    coin_names = []
 
 # ===============================================================
 
@@ -381,8 +390,7 @@ class HistoricalQuotes(ScreenWithTickers):
 class CryptoNews(ScreenWithTickers):
     def __init__(self, config, screen_name="crypto_news") -> None:
         super().__init__(config, screen_name)
-        self.tickers_news: list = ["Bitcoin", "Ethereum", "Tether", "BNB"]
-        self.ticker_var.set(self.tickers_news[0])
+        self.ticker_var.set(coin_names[0])
         self.news_frame = None
 
     def search_news(self, frame):
@@ -440,7 +448,7 @@ class CryptoNews(ScreenWithTickers):
         frame = self._add_frame_with_background(r"static\background2.jpg")
         news_frame = tkinter.Frame(self.root)
         news_frame.pack(expand=True, fill='both')
-        self._build_ticker_choice(frame, self.tickers_news, padx=20)
+        self._build_ticker_choice(frame, coin_names, padx=20)
         search_button = tkinter.Button(
             frame,
             text="Search News",
