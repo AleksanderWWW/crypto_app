@@ -430,8 +430,10 @@ class CryptoNews(ScreenWithTickers):
             text="Search News",
             command=lambda: self.search_news(news_frame),
             font=("MS Serif", 15, "bold"),
-            bg='#d4af37'
+            bg='#d4af37',
         )
-        search_button.grid(row=0, column=2)
+        search_button.grid(row=0, column=2, padx=40)
+
+        self._add_footer_buttons(frame, row=0, col_back=4, padx=20, col_refresh=5)
 
 
