@@ -43,7 +43,6 @@ google_news = GoogleNews(
     encode="utf-8"
 )
 
-
 # get coin names for news scraping
 scraper = Scraper()
 try:
@@ -51,6 +50,7 @@ try:
 except Exception as e:
     print(e)
     coin_names = []
+
 
 # ===============================================================
 
@@ -83,12 +83,12 @@ class Screen:
     def _add_footer_buttons(self, parent, **kwargs):
         back_button = tkinter.Button(parent, text="Back",
                                      command=lambda: self._transition(StartScreen),
-                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
+                                     font=(self.config["font"], 15, "bold"), bg='#d4af37')
         back_button.grid(row=kwargs["row"], column=kwargs["col_back"], padx=kwargs["padx"], pady=20)
 
         refresh_button = tkinter.Button(parent, text="Refresh",
                                         command=lambda: self._transition(self.__class__),
-                                        font=("MS Serif", 15, "bold"), bg='#d4af37')
+                                        font=(self.config["font"], 15, "bold"), bg='#d4af37')
         refresh_button.grid(row=kwargs["row"], column=kwargs["col_refresh"],
                             padx=kwargs["padx"], pady=20)
 
@@ -120,7 +120,7 @@ class ScreenWithTickers(Screen):
     def _build_ticker_choice(self, parent, tickers=ticker_list, **kwargs):
         ticker_choice = tkinter.ttk.Combobox(parent, textvariable=self.ticker_var,
                                              values=tickers,
-                                             font=("MS Serif", 15, "bold"))
+                                             font=(self.config["font"], 15, "bold"))
 
         def check_input(event):
             value = event.widget.get()
@@ -150,7 +150,7 @@ class StartScreen(Screen):
         frame = tkinter.Frame(self.root, pady=20, bg="black")
         frame.pack(fill="both", expand=True)
         welcome_label = tkinter.Label(frame, text="Welcome to Crypto App!",
-                                      font=("Open Sans", 20, "bold"), fg="#d4af37",
+                                      font=(self.config["font"], 20, "bold"), fg="#d4af37",
                                       bg="black")
         welcome_label.grid(row=0, column=0, columnspan=3)
 
@@ -170,17 +170,17 @@ class StartScreen(Screen):
                                       command=lambda: self._transition(SpotQuotes),
                                       width=20,
                                       pady=20,
-                                      font=("MS Serif", 15, "bold"),
+                                      font=(self.config["font"], 15, "bold"),
                                       bg='#d4af37')
         start_button.grid(row=2, column=0)
         btn1 = tkinter.Button(frame, text="Crypto news", width=20,
                               pady=20,
-                              font=("MS Serif", 15, "bold"),
+                              font=(self.config["font"], 15, "bold"),
                               bg='#d4af37',
                               command=lambda: self._transition(CryptoNews))
         btn2 = tkinter.Button(frame, text="Historical data", width=20,
                               pady=20,
-                              font=("MS Serif", 15, "bold"),
+                              font=(self.config["font"], 15, "bold"),
                               bg='#d4af37',
                               command=lambda: self._transition(HistoricalQuotes))
         btn1.grid(row=2, column=1)
@@ -197,7 +197,7 @@ class SpotQuotes(ScreenWithTickers):
         if not ticker_list:
             self.ticker_var.set("Failed to load tickers")
             tkinter.Label(self.root, text="No internet connection!",
-                          font=("MS Serif", 15, "bold")).pack()
+                          font=(self.config["font"], 15, "bold")).pack()
 
     def _build_window(self):
         padx = 20
@@ -210,17 +210,17 @@ class SpotQuotes(ScreenWithTickers):
                                           bg="darkblue",
                                           fg="white",
                                           year=datetime.date.today().year,
-                                          font=("MS Serif", 15, "bold"))
+                                          font=(self.config["font"], 15, "bold"))
         date_entry.grid(row=0, column=1, padx=padx, pady=20)
 
         adjusted_choice = tkinter.ttk.Combobox(frame, textvariable=self.adjusted_var,
                                                values=["adjusted", "not adjusted"],
-                                               font=("MS Serif", 15, "bold"),
+                                               font=(self.config["font"], 15, "bold"),
                                                state="readonly")
 
         search_button = tkinter.Button(frame, text="Search",
                                        command=lambda: self.get_daily_open_close(),
-                                       font=("MS Serif", 15, "bold"), bg='#d4af37'
+                                       font=(self.config["font"], 15, "bold"), bg='#d4af37'
                                        )
         adjusted_choice.grid(row=0, column=2, padx=padx, pady=20, columnspan=2)
 
@@ -250,7 +250,7 @@ class SpotQuotes(ScreenWithTickers):
         self.loading_lbl = utils.ImageLabel(frame)
         self.loading_lbl.grid(row=2, column=1, pady=60)
         self.loading_lbl.load(r'static\loading.gif')
-        result_label = tkinter.Label(frame, name="close_price", font=("MS Serif", 15, "bold"),
+        result_label = tkinter.Label(frame, name="close_price", font=(self.config["font"], 15, "bold"),
                                      text="waiting for the query to complete...")
         result_label.grid(row=2, column=1, pady=60)
         self.root.update()
@@ -348,7 +348,7 @@ class HistoricalQuotes(ScreenWithTickers):
                                                 bg="darkblue",
                                                 fg="white",
                                                 year=datetime.date.today().year,
-                                                font=("MS Serif", 15, "bold"))
+                                                font=(self.config["font"], 15, "bold"))
         start_date_entry.grid(row=0, column=1, padx=padx, pady=20)
 
         end_date_entry = tkcalendar.DateEntry(frame,
@@ -356,7 +356,7 @@ class HistoricalQuotes(ScreenWithTickers):
                                               bg="darkblue",
                                               fg="white",
                                               year=datetime.date.today().year,
-                                              font=("MS Serif", 15, "bold"))
+                                              font=(self.config["font"], 15, "bold"))
         end_date_entry.grid(row=0, column=2, padx=padx, pady=20)
 
         # ===========================================================================
@@ -367,7 +367,7 @@ class HistoricalQuotes(ScreenWithTickers):
                                     command=lambda: self.run_process() or start_date_entry.config(
                                         state="disabled")
                                                     or end_date_entry.config(state="disabled"),
-                                    font=("MS Serif", 15, "bold"), bg='#d4af37')
+                                    font=(self.config["font"], 15, "bold"), bg='#d4af37')
         run_button.grid(row=0, column=3, padx=padx, pady=20)
 
         # ===========================================================================
@@ -377,11 +377,11 @@ class HistoricalQuotes(ScreenWithTickers):
                                              values=self.export_formats,
                                              width=10,
                                              state="readonly",
-                                             font=("MS Serif", 15, "bold"))
+                                             font=(self.config["font"], 15, "bold"))
         format_choice.grid(row=3, column=1, padx=padx, pady=20)
         save_button = tkinter.Button(frame, text="Export",
                                      command=lambda: self.export_to_excel(),
-                                     font=("MS Serif", 15, "bold"), bg='#d4af37')
+                                     font=(self.config["font"], 15, "bold"), bg='#d4af37')
         save_button.grid(row=3, column=2, padx=padx, pady=20)
 
         self._add_footer_buttons(frame, padx=20, row=3, col_back=0, col_refresh=3)
@@ -453,7 +453,7 @@ class CryptoNews(ScreenWithTickers):
             frame,
             text="Search News",
             command=lambda: self.search_news(news_frame),
-            font=("MS Serif", 15, "bold"),
+            font=(self.config["font"], 15, "bold"),
             bg='#d4af37',
         )
         search_button.grid(row=0, column=2, padx=40)
